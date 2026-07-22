@@ -2,7 +2,7 @@ import { buildContactSheet, buildHeroSection } from "./components";
 import { CONFIG } from "./config";
 import { stopLoadingAnim } from "./loading";
 
-export const images = Object.values(import.meta.glob('./images/thumbnails/*.{png,jpg,jpeg,svg}', { 
+export const images = Object.values(import.meta.glob('/src/images/thumbnails/*.{png,jpg,jpeg,svg}', { 
     eager: true, 
     as: 'url'
 }));
