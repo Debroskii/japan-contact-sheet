@@ -2,12 +2,22 @@ import { buildContactSheet, buildHeroSection } from "./components";
 import { CONFIG } from "./config";
 import { stopLoadingAnim } from "./loading";
 
-export const images = Object.values(import.meta.glob('/src/images/thumbnails/*.{png,jpg,jpeg,svg}', { 
+export const thumbnailModules = import.meta.glob('/src/images/thumbnails/*.{png,jpg,jpeg,svg}', { 
     eager: true, 
-    as: 'url'
-}));
+    query: 'url'
+});
+export const filename = (path) => path.split('/').pop();
 
-export let unloadedImages = [...images]
+export const thumbMap = {};
+for (const path in thumbnailModules) {
+  thumbMap[filename(path)] = thumbnailModules[path].default;
+}
+
+export const fullRes = import.meta.glob('/src/images/*.{png,jpg,jpeg,svg}');
+
+export const thumbnails = Object.values(thumbMap);
+
+export let unloadedImages = Object.entries(thumbMap).map(([name, url]) => ({ filename: name, url }));
 export let loadedImages = []
 
 export let loadingBufferStatus = {
@@ -17,13 +27,13 @@ export let loadingBufferStatus = {
 
 export function buildLoadingBuffer() {
     let bufferContainer = document.createElement("div");
-    for(let imageURL of images) {
+    for(let imageURL of thumbnails) {
         let img  = document.createElement("img")
         img.src = imageURL;
         img.onload = () => {
             loadingBufferStatus.bufferImagesLoaded++;
-            document.getElementById("loading-status").innerHTML = `${stringifyNumberToHaveSameDigitsAsMax(loadingBufferStatus.bufferImagesLoaded)} / ${images.length}`
-            if(loadingBufferStatus.bufferImagesLoaded == images.length) {
+            document.getElementById("loading-status").innerHTML = `${stringifyNumberToHaveSameDigitsAsMax(loadingBufferStatus.bufferImagesLoaded)} / ${thumbnails.length}`
+            if(loadingBufferStatus.bufferImagesLoaded == thumbnails.length) {
                 setupGallery()
             }
         }
@@ -34,8 +44,8 @@ export function buildLoadingBuffer() {
     img.src = "/src/assets/July-10-42.jpg";
     img.onload = () => {
         loadingBufferStatus.bufferImagesLoaded++;
-        document.getElementById("loading-status").innerHTML = `${stringifyNumberToHaveSameDigitsAsMax(loadingBufferStatus.bufferImagesLoaded)} / ${images.length}`
-        if(loadingBufferStatus.bufferImagesLoaded == images.length) {
+        document.getElementById("loading-status").innerHTML = `${stringifyNumberToHaveSameDigitsAsMax(loadingBufferStatus.bufferImagesLoaded)} / ${thumbnails.length}`
+        if(loadingBufferStatus.bufferImagesLoaded == thumbnails.length) {
             setupGallery()
         }
     }

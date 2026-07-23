@@ -1,5 +1,5 @@
 import { CONFIG } from "./config";
-import { images, unloadedImages } from "./gallery";
+import { unloadedImages, fullRes } from "./gallery";
 import exifr from 'exifr'
 
 export function buildHeroSection(app) {
@@ -15,7 +15,7 @@ export function buildHeroSection(app) {
     heroTitleContainer.id = "hero-title-container"
 
     let heroLogo = document.createElement("img")
-    heroLogo.src = "/src/assets/project_logo.png"
+    heroLogo.src = new URL("./assets/project_logo.png", import.meta.url).href
     heroLogo.id = "hero-project-logo"
     // heroTitleContainer.appendChild(heroLogo)
 
@@ -100,21 +100,20 @@ async function distributeImagesIntoColumns(imageCount, c1, c2, c3) {
   if (imageCount > unloadedImages.length) imageCount = unloadedImages.length;
 
   for (let i = 0; i < imageCount; i++) {
-    // pick the smallest column using up-to-date, real heights
     let c = getSmallestColumn(c1, c2, c3);
 
-    let image = getRandomItem(unloadedImages);
+    let image = getRandomItem(unloadedImages); // now { filename, url }
     unloadedImages.splice(unloadedImages.indexOf(image), 1);
 
     let imgNode = document.createElement("img");
     imgNode.classList.add("gallery-thumbnail");
+    imgNode.dataset.filename = image.filename; // <-- stash it, don't parse src later
     c.appendChild(imgNode);
 
-    // pause here until THIS image has actually loaded
-    await new Promise((resolve, reject) => {
+    await new Promise((resolve) => {
       imgNode.onload = resolve;
-      imgNode.onerror = resolve; // don't hang the loop forever on a broken image
-      imgNode.src = image;
+      imgNode.onerror = resolve;
+      imgNode.src = image.url;
     });
 
     imgNode.animate(
@@ -125,39 +124,38 @@ async function distributeImagesIntoColumns(imageCount, c1, c2, c3) {
       { duration: 500, easing: "ease-out", fill: "forwards", iterations: 1 }
     );
 
-    imgNode.onclick = () => {
-      buildPlayback(image)
-    }
+    imgNode.onclick = () => buildPlayback(imgNode);
 
-    // only now, with a real rendered height, update the tracked height
     c.dataset.height = Number(c.dataset.height) + imgNode.offsetHeight;
   }
 }
 
-async function buildPlayback(imgSrc) {
-  let playbackFullResSrc = imgSrc.split("/")[4]
-  let fullURL = `/src/images/${playbackFullResSrc}`
-  const app = document.getElementById("app");
+async function buildPlayback(imgNode) {
+  const name = imgNode.dataset.filename;
+  const importFn = fullRes[`/src/images/${name}`];
 
+  if (!importFn) {
+    console.warn('No full-res match for', name);
+    return;
+  }
+
+  const mod = await importFn(); // fetch happens now, not before
+  const fullURL = mod.default;
+
+  const app = document.getElementById("app");
   document.body.classList.add("overlay-active")
 
   let playbackContainer = document.createElement("div")
   playbackContainer.id = "playback-container"
 
-  playbackContainer.addEventListener('click', (event) => {
-    // Prevents the click from bubbling to parent elements
-    event.stopPropagation();
-  });
-
-  playbackContainer.addEventListener('touchmove', (event) => {
-    event.preventDefault(); // Prevents background scrolling on mobile
-  }, { passive: false });
+  playbackContainer.addEventListener('click', (event) => event.stopPropagation());
+  playbackContainer.addEventListener('touchmove', (event) => event.preventDefault(), { passive: false });
 
   let top = document.createElement("div")
   top.id = "playback-top"
 
   let filenameLabel = document.createElement("p")
-  filenameLabel.innerHTML = playbackFullResSrc
+  filenameLabel.innerHTML = name
   filenameLabel.id = "playback-filename"
   top.appendChild(filenameLabel)
 
@@ -186,7 +184,6 @@ async function buildPlayback(imgSrc) {
   bottom.id = "playback-bottom"
 
   let exifData = await getExifData(playbackImg);
-  console.log(exifData)
 
   let camera = document.createElement("p")
   camera.classList.add("playback-bottom-info")
@@ -213,9 +210,7 @@ async function buildPlayback(imgSrc) {
   iso.innerHTML = exifData.ISO + " ISO"
   bottom.appendChild(iso)
 
-  downloadBtn.onclick = () => {
-    downloadImageFromNode(playbackImg, playbackFullResSrc)
-  }
+  downloadBtn.onclick = () => downloadImageFromNode(playbackImg, name)
 
   playbackContainer.appendChild(bottom)
   app.appendChild(playbackContainer)

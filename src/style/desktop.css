@@ -99,3 +99,51 @@
     align-items: center;
     text-align: center;
   }
+
+  #playback-top {
+    display: flex;
+    align-items: center;
+    height: 5rem;
+    width: 100%;
+  }
+  
+  #playback-img {
+    max-width: 80vw;
+    max-height: 80vh;
+  }
+  
+  #playback-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 5rem;
+    width: 100vw;
+  }
+  
+  #playback-filename {
+    margin: 2rem;
+    font-size: 1.1rem;
+    /* font-family: var(--font-details); */
+    margin-right: auto;
+  }
+  
+  #playback-close {
+    background: none;
+    border: none;
+    color: white;
+    padding: 1.5rem;
+    cursor: pointer;
+  }
+  
+  #playback-download {
+    background: none;
+    border: none;
+    color: white;
+    padding: 1.5rem;
+    cursor: pointer;
+  }
+  
+  .playback-bottom-info {
+    margin: 2rem;
+    font-size: 1rem;
+  }
